@@ -352,48 +352,48 @@ public interface IGraphAgent
 }
 ```
 
-### SignalR Hub Interface
+### AG-UI Protocol Handler Interface
 
-Interface for real-time streaming hub.
+Interface for AG-UI Protocol handler for real-time streaming.
 
 **C# (.NET Backend)**:
 ```csharp
 /// <summary>
-/// SignalR hub for streaming Graph data to React frontend
+/// AG-UI Protocol handler for streaming Graph data to React frontend
 /// </summary>
-public interface IGraphDataHub
+public interface IAGUIProtocolHandler
 {
     /// <summary>
     /// Start streaming users to the connected client
     /// </summary>
-    Task StreamUsers();
+    Task StreamUsers(IAGUIProtocolConnection connection);
     
     /// <summary>
     /// Start streaming projects to the connected client
     /// </summary>
-    Task StreamProjects();
+    Task StreamProjects(IAGUIProtocolConnection connection);
     
     /// <summary>
     /// Stop current streaming operation
     /// </summary>
-    Task StopStreaming();
+    Task StopStreaming(IAGUIProtocolConnection connection);
 }
 ```
 
-**TypeScript (React Frontend - SignalR Service)**:
+**TypeScript (React Frontend - AG-UI Protocol Service)**:
 ```typescript
 /**
- * SignalR service for connecting to .NET backend streaming hub
+ * AG-UI Protocol service for connecting to .NET backend streaming endpoint
  */
-interface ISignalRService {
+interface IAGUIProtocolService {
   /**
-   * Connect to SignalR hub
+   * Connect to AG-UI Protocol endpoint
    * @returns Promise that resolves when connected
    */
   connect(): Promise<void>;
   
   /**
-   * Disconnect from SignalR hub
+   * Disconnect from AG-UI Protocol endpoint
    * @returns Promise that resolves when disconnected
    */
   disconnect(): Promise<void>;
@@ -414,13 +414,13 @@ interface ISignalRService {
    * Register callback for stream completion
    * @param callback Function to call when stream completes
    */
-  onStreamComplete(callback: () => void): void;
+  onComplete(callback: () => void): void;
   
   /**
    * Register callback for stream errors
    * @param callback Function to call when error occurs
    */
-  onStreamError(callback: (error: string) => void): void;
+  onError(callback: (error: string) => void): void;
   
   /**
    * Request backend to start streaming users
@@ -613,27 +613,27 @@ interface UseStreamingDataResult {
 }
 ```
 
-### useSignalR Hook
+### useAGUIProtocol Hook
 
 ```typescript
 /**
- * Return type for useSignalR hook
+ * Return type for useAGUIProtocol hook
  */
-interface UseSignalRResult {
-  /** Whether SignalR is connected */
+interface UseAGUIProtocolResult {
+  /** Whether AG-UI Protocol is connected */
   isConnected: boolean;
   
   /** Connection error if any */
   connectionError: string | null;
   
-  /** Connect to SignalR hub */
+  /** Connect to AG-UI Protocol endpoint */
   connect: () => Promise<void>;
   
-  /** Disconnect from SignalR hub */
+  /** Disconnect from AG-UI Protocol endpoint */
   disconnect: () => Promise<void>;
   
-  /** Underlying SignalR service instance */
-  service: ISignalRService | null;
+  /** Underlying AG-UI Protocol service instance */
+  service: IAGUIProtocolService | null;
 }
 ```
 

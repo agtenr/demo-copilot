@@ -51,16 +51,16 @@ export const AGCard = ({ children, className = '' }: CardProps) => {
 
 ### 2. Microsoft Agent Framework
 
-**Decision**: Implement using Microsoft Semantic Kernel in .NET 8+ as the backend agent framework
+**Decision**: Implement using Microsoft Agent Framework in .NET 8+ as the backend agent framework
 
 **Rationale**:
-- Microsoft Semantic Kernel is the official Microsoft agent framework for .NET
-- Provides built-in support for AI orchestration, plugins, and memory
-- Perfect for demonstrating enterprise-grade agent patterns
+- Microsoft Agent Framework (https://github.com/microsoft/agent-framework) is the official Microsoft framework for building agents
+- Provides modular architecture for creating AI agents with clear separation of concerns
+- Supports plugin-based extensibility for integrating with various services
 - Well-documented with extensive examples
 - Integrates naturally with Microsoft Graph API
-- Supports streaming responses out of the box
-- Production-ready framework used in real Microsoft products
+- Supports streaming responses and real-time communication
+- Production-ready framework designed for enterprise applications
 
 **Alternatives Considered**:
 1. **TypeScript/JavaScript implementation** - PRO: Single language stack. CON: Doesn't demonstrate real Microsoft Agent Framework, misses .NET ecosystem integration
@@ -72,12 +72,12 @@ export const AGCard = ({ children, className = '' }: CardProps) => {
 // backend/src/GraphAgentDemo/Agents/GraphAgent.cs
 public class GraphAgent : IGraphAgent
 {
-    private readonly IKernel _kernel;
+    private readonly IAgentRuntime _runtime;
     private readonly IGraphService _graphService;
     
-    public GraphAgent(IKernel kernel, IGraphService graphService)
+    public GraphAgent(IAgentRuntime runtime, IGraphService graphService)
     {
-        _kernel = kernel;
+        _runtime = runtime;
         _graphService = graphService;
     }
     
@@ -86,7 +86,7 @@ public class GraphAgent : IGraphAgent
         // Extract users from Graph API
         var users = await _graphService.GetUsersAsync();
         
-        // Summarize using Semantic Kernel
+        // Use Agent Framework to process and summarize
         foreach (var user in users)
         {
             var summarized = await SummarizeUserAsync(user);
@@ -99,65 +99,71 @@ public class GraphAgent : IGraphAgent
     
     private async Task<User> SummarizeUserAsync(User user)
     {
-        // Use Semantic Kernel to summarize/enrich user data
-        var prompt = $"Summarize this user profile: {user.DisplayName}, {user.JobTitle}";
-        var result = await _kernel.RunAsync(prompt);
+        // Use Agent Framework to summarize/enrich user data
+        var context = new AgentContext
+        {
+            Input = $"Summarize this user profile: {user.DisplayName}, {user.JobTitle}"
+        };
         
-        user.Summary = result.ToString();
+        var result = await _runtime.ExecuteAsync(context);
+        user.Summary = result.Output;
         return user;
     }
 }
 ```
 
-**Streaming Implementation**:
+**AG-UI Protocol Implementation**:
 ```csharp
-// backend/src/GraphAgentDemo/Hubs/GraphDataHub.cs
-public class GraphDataHub : Hub
+// backend/src/GraphAgentDemo/Protocol/AGUIProtocolHandler.cs
+public class AGUIProtocolHandler : IAGUIProtocolHandler
 {
     private readonly IGraphAgent _agent;
     
-    public async Task StreamUsers()
+    public async Task StreamUsers(IAGUIProtocolConnection connection)
     {
         await foreach (var user in _agent.StreamUsersAsync())
         {
-            await Clients.Caller.SendAsync("ReceiveUser", user);
+            await connection.SendAsync("user", user);
         }
         
-        await Clients.Caller.SendAsync("StreamComplete");
+        await connection.SendAsync("complete", new { status = "done" });
     }
 }
 ```
 
-**Frontend SignalR Integration**:
+**Frontend AG-UI Protocol Integration**:
 ```typescript
-// frontend/src/services/signalrService.ts
-import * as signalR from "@microsoft/signalr";
+// frontend/src/services/aguiProtocolService.ts
+import { AGUIProtocolClient } from '@ag-ui/protocol';
 
-export class SignalRService {
-  private connection: signalR.HubConnection;
+export class AGUIProtocolService {
+  private client: AGUIProtocolClient;
   
   async connect(): Promise<void> {
-    this.connection = new signalR.HubConnectionBuilder()
-      .withUrl("http://localhost:5000/graphDataHub")
-      .withAutomaticReconnect()
-      .build();
+    this.client = new AGUIProtocolClient({
+      url: "http://localhost:5000/agui"
+    });
     
-    await this.connection.start();
+    await this.client.connect();
   }
   
   onUserReceived(callback: (user: User) => void): void {
-    this.connection.on("ReceiveUser", callback);
+    this.client.on("user", callback);
+  }
+  
+  onComplete(callback: () => void): void {
+    this.client.on("complete", callback);
   }
   
   async startStreamingUsers(): Promise<void> {
-    await this.connection.invoke("StreamUsers");
+    await this.client.send("streamUsers");
   }
 }
 ```
 
 **Agent Framework Principles Applied**:
-- **Orchestration**: Semantic Kernel manages the workflow
-- **Streaming**: Real-time data delivery via SignalR
+- **Modularity**: Agent Framework provides modular components for different responsibilities
+- **Streaming**: Real-time data delivery via AG-UI Protocol
 - **Summarization**: Agent enriches/summarizes raw Graph data
 - **Separation**: .NET backend handles agent logic, React frontend handles display
 - **Mockability**: Can toggle between real Graph API and mock data
@@ -276,19 +282,20 @@ describe('UserList', () => {
 
 ### 5. State Management & Real-time Updates
 
-**Decision**: Use React hooks (useState, useEffect) with SignalR for real-time streaming updates
+**Decision**: Use React hooks (useState, useEffect) with AG-UI Protocol for real-time streaming updates
 
 **Rationale**:
 - Built-in React hooks are sufficient for local state management
-- SignalR provides real-time bidirectional communication
+- AG-UI Protocol provides real-time bidirectional communication
 - Custom hooks encapsulate streaming logic
 - No additional state management library needed
 - Real-time updates feel more responsive and modern
+- AG-UI Protocol is purpose-built for UI streaming scenarios
 
 **Alternatives Considered**:
 1. **Redux Toolkit** - PRO: Industry standard, powerful. CON: Boilerplate, overkill for demo
 2. **Zustand** - PRO: Simple, minimal. CON: Another dependency to learn
-3. **Server-Sent Events (SSE)** - PRO: Simpler than SignalR. CON: One-way only, less flexible
+3. **SignalR** - PRO: Microsoft technology. CON: More complex than AG-UI Protocol for this use case, AG-UI Protocol is specifically designed for UI streaming
 
 **Custom Hook Pattern for Streaming**:
 ```typescript
@@ -297,23 +304,23 @@ export function useStreamingData() {
   const [users, setUsers] = useState<User[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const signalRService = useSignalR();
+  const aguiProtocol = useAGUIProtocol();
 
   const streamUsers = async () => {
     setIsStreaming(true);
     setError(null);
     setUsers([]); // Clear existing
     
-    signalRService.onUserReceived((user: User) => {
+    aguiProtocol.onUserReceived((user: User) => {
       setUsers(prev => [...prev, user]); // Add user as it streams
     });
     
-    signalRService.onStreamComplete(() => {
+    aguiProtocol.onComplete(() => {
       setIsStreaming(false);
     });
     
     try {
-      await signalRService.startStreamingUsers();
+      await aguiProtocol.startStreamingUsers();
     } catch (err) {
       setError(err.message);
       setIsStreaming(false);
@@ -375,9 +382,9 @@ export function useStreamingData() {
 
 **Backend Technologies**:
 - .NET 8 SDK
-- Microsoft.SemanticKernel (Agent Framework)
+- Microsoft.Agent.Framework (from https://github.com/microsoft/agent-framework)
 - Microsoft.Graph (Graph API SDK)
-- Microsoft.AspNetCore.SignalR (Real-time streaming)
+- AG-UI Protocol server implementation
 - xUnit (Testing framework)
 
 **Frontend Technologies** (already in project):
@@ -387,7 +394,7 @@ export function useStreamingData() {
 - Node.js 18+
 
 **Frontend To Be Added**:
-- @microsoft/signalr: ^8.0.0 (SignalR client)
+- @ag-ui/protocol: latest (AG-UI Protocol client from https://github.com/ag-ui-protocol/ag-ui)
 - react-router-dom: ^6.20.0 (routing)
 - vitest: ^1.0.0 (testing framework)
 - @testing-library/react: ^14.0.0 (component testing)
@@ -417,8 +424,8 @@ export function useStreamingData() {
 
 **Frontend (TypeScript)**:
 - Components: PascalCase (UserCard.tsx, AGStreamingList.tsx)
-- Hooks: camelCase with "use" prefix (useStreamingData.ts, useSignalR.ts)
-- Services: camelCase (signalrService.ts, streamingClient.ts)
+- Hooks: camelCase with "use" prefix (useStreamingData.ts, useAGUIProtocol.ts)
+- Services: camelCase (aguiProtocolService.ts, streamingClient.ts)
 - Types/Interfaces: PascalCase (User, Project, StreamResponse)
 - CSS Modules: component-name.module.css
 

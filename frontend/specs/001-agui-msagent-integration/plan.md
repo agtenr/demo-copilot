@@ -7,21 +7,21 @@
 
 ## Summary
 
-Build a simple, novice-friendly demonstration application that integrates AG-UI (front-end component library) and Microsoft Agent Framework (.NET backend using Semantic Kernel) with real-time streaming of Microsoft Graph API data. The application consists of a .NET backend agent that extracts and summarizes user and project data, streams it to a React frontend via SignalR/SSE, and displays it using AG-UI components with progressive rendering. The goal is to provide clear, reusable examples for developers learning how to integrate .NET agents with modern React frontends.
+Build a simple, novice-friendly demonstration application that integrates AG-UI (front-end component library) and Microsoft Agent Framework (.NET backend) with real-time streaming of Microsoft Graph API data via AG-UI Protocol. The application consists of a .NET backend agent that extracts and summarizes user and project data, streams it to a React frontend using AG-UI Protocol, and displays it using AG-UI components with progressive rendering. The goal is to provide clear, reusable examples for developers learning how to integrate .NET agents with modern React frontends using AG-UI Protocol.
 
 ## Technical Context
 
 **Backend**:
 - Language/Version: C# with .NET 8+
-- Primary Framework: Microsoft Semantic Kernel (Agent Framework)
-- Streaming: SignalR or Server-Sent Events (SSE)
+- Primary Framework: Microsoft Agent Framework (https://github.com/microsoft/agent-framework)
+- Streaming: AG-UI Protocol for real-time communication
 - Graph API: Microsoft.Graph SDK (with mock mode)
 
 **Frontend**:
 - Language/Version: TypeScript 5.9+, React 19+, Node.js 18+
 - Primary Dependencies:
-  - AG-UI (to be determined based on availability, fallback to modern React UI library)
-  - SignalR Client (Microsoft.AspNetCore.SignalR.Client) or EventSource for SSE
+  - AG-UI Protocol client (for connecting to .NET backend)
+  - AG-UI components (from https://github.com/ag-ui-protocol/ag-ui)
   - Vite 7+ (already configured)
   - React Router (for navigation between user/project views)
 
@@ -38,7 +38,7 @@ Build a simple, novice-friendly demonstration application that integrates AG-UI 
 
 **Performance Goals**: 
 - Initial page load < 2 seconds
-- Stream chunk delivery < 100ms per chunk
+- Stream chunk delivery < 100ms per chunk via AG-UI Protocol
 - Smooth 60fps UI interactions during streaming
 - Backend agent summarization < 500ms
 
@@ -47,10 +47,10 @@ Build a simple, novice-friendly demonstration application that integrates AG-UI 
 - Zero external API dependencies in mock mode (all mocked in .NET)
 - Maximum 10-minute setup time from clone to running both backend and frontend
 - All integration points must be clearly documented
-- Streaming must work across modern browsers
+- Streaming must work via AG-UI Protocol across modern browsers
 
 **Scale/Scope**: 
-- .NET backend: ~5-8 classes, 1 agent, 1 streaming hub
+- .NET backend: ~5-8 classes, 1 agent, 1 AG-UI Protocol endpoint
 - React frontend: ~10 React components
 - 2 main views (Users, Projects)
 - Mock data for 5+ users, 3+ projects
@@ -101,12 +101,12 @@ specs/001-agui-msagent-integration/
 │   ├── src/
 │   │   ├── GraphAgentDemo/           # Main .NET project
 │   │   │   ├── Agents/               # Microsoft Agent Framework agents
-│   │   │   │   ├── GraphAgent.cs     # Main agent using Semantic Kernel
+│   │   │   │   ├── GraphAgent.cs     # Main agent using Agent Framework
 │   │   │   │   ├── GraphSummarizer.cs # Data summarization logic
 │   │   │   │   └── IGraphAgent.cs    # Agent interface
 │   │   │   │
-│   │   │   ├── Hubs/                 # SignalR hubs for streaming
-│   │   │   │   └── GraphDataHub.cs   # Real-time streaming hub
+│   │   │   ├── Protocol/             # AG-UI Protocol implementation
+│   │   │   │   └── AGUIProtocolHandler.cs # AG-UI Protocol handler
 │   │   │   │
 │   │   │   ├── Models/               # Data models
 │   │   │   │   ├── User.cs           # User entity
@@ -130,7 +130,7 @@ specs/001-agui-msagent-integration/
 └── frontend/                          # React Frontend Application
     ├── src/
     │   ├── services/                  # Backend integration services
-    │   │   ├── signalrService.ts     # SignalR client for streaming
+    │   │   ├── aguiProtocolService.ts # AG-UI Protocol client
     │   │   └── streamingClient.ts    # Streaming data client
     │   │
     │   ├── components/                # React components
@@ -156,7 +156,7 @@ specs/001-agui-msagent-integration/
     │   │
     │   ├── hooks/                     # Custom React hooks
     │   │   ├── useStreamingData.ts   # Hook for streaming data
-    │   │   └── useSignalR.ts         # Hook for SignalR connection
+    │   │   └── useAGUIProtocol.ts    # Hook for AG-UI Protocol connection
     │   │
     │   ├── types/                     # TypeScript type definitions
     │   │   ├── User.ts               # User entity types
@@ -177,7 +177,7 @@ specs/001-agui-msagent-integration/
     └── README.md                      # Frontend setup instructions
 ```
 
-**Structure Decision**: Full-stack structure with separate backend and frontend projects. The .NET backend implements Microsoft Agent Framework (Semantic Kernel) to handle Graph API interactions, data summarization, and real-time streaming via SignalR. The React frontend connects to the streaming endpoint and uses AG-UI components to progressively render data as it arrives. This demonstrates proper separation of concerns and realistic architecture patterns while remaining simple enough for educational purposes.
+**Structure Decision**: Full-stack structure with separate backend and frontend projects. The .NET backend implements Microsoft Agent Framework to handle Graph API interactions, data summarization, and real-time streaming via AG-UI Protocol. The React frontend connects to the AG-UI Protocol endpoint and uses AG-UI components to progressively render data as it arrives. This demonstrates proper separation of concerns and realistic architecture patterns while remaining simple enough for educational purposes.
 
 ## Complexity Tracking
 
