@@ -1,0 +1,71 @@
+.container {
+  width: 100%;
+}
+
+.itemsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.item {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.streamingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.pulse {
+  width: 12px;
+  height: 12px;
+  background: #646cff;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.progress {
+  margin-left: auto;
+  font-weight: 500;
+  color: #646cff;
+}
+
+.completionMessage {
+  padding: 1rem;
+  margin-top: 1rem;
+  background: #e8f5e9;
+  border-radius: 6px;
+  color: #2e7d32;
+  text-align: center;
+  font-size: 0.9rem;
+}
