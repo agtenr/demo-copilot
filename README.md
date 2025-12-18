@@ -1,79 +1,121 @@
 # demo-copilot
 
-A demonstration application integrating **AG-UI** (frontend component library) and **Microsoft Agent Framework** pattern with mock Microsoft Graph API data, featuring real-time data streaming to a React frontend.
+A **full-stack demonstration application** integrating **AG-UI** components and **Microsoft Agent Framework** with a **.NET 8 backend** that streams Microsoft Graph API data in real-time to a React frontend via **SignalR**.
 
 ## 📚 Demo Specifications
 
 This repository includes comprehensive specifications built with GitHub Spec Kit:
 
-- **[AG-UI & Microsoft Agent Framework Integration](./frontend/specs/001-agui-msagent-integration/)** - A demonstration application showing how to integrate AG-UI components with Microsoft Agent Framework pattern to fetch and display data from Microsoft Graph API (mock mode).
+- **[AG-UI & Microsoft Agent Framework Integration](./frontend/specs/001-agui-msagent-integration/)** - Complete specification for integrating AG-UI components with Microsoft Agent Framework and .NET backend agent.
   - Complete specification with user stories, requirements, and success criteria
-  - Technical implementation plan and research
+  - Technical implementation plan and architecture
   - Data models and API contracts
   - Quick start guide for novice developers
 
 ## ✨ Features
 
-This demo showcases:
+This full-stack demo showcases:
 
-- **Real-time Data Streaming**: Simulated AG-UI Protocol streaming with progressive rendering
-- **Microsoft Agent Framework Pattern**: Clean separation of concerns with agent-based architecture
-- **AG-UI Components**: Custom lightweight UI components following AG-UI principles
-- **Microsoft Graph API Integration**: Mock data matching real Microsoft Graph API schema
-- **TypeScript**: Full type safety with comprehensive interfaces
+- **.NET 8 Backend**: Real Microsoft Agent Framework pattern implementation
+- **SignalR Streaming**: Real-time data streaming from .NET to React
+- **Microsoft Agent Framework**: Clean agent-based architecture in C#
+- **AG-UI Components**: Custom lightweight UI components with streaming support
+- **Microsoft Graph API**: Mock data matching real Microsoft Graph API schema
+- **Type Safety**: Full TypeScript (frontend) and C# (backend) type coverage
+- **Progressive Rendering**: Smooth UI updates as data streams in
 - **Responsive Design**: Works on desktop and mobile devices
-- **Error Handling**: Graceful loading and error states
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
+- **.NET 8 SDK** ([Download here](https://dotnet.microsoft.com/download))
 - **Node.js 18+** ([Download here](https://nodejs.org/))
 - **npm** or **yarn** (comes with Node.js)
 
-### Installation
+### Full-Stack Setup (Both Backend and Frontend)
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/agtenr/demo-copilot.git
-   cd demo-copilot
-   ```
+#### 1. Clone the repository
+```bash
+git clone https://github.com/agtenr/demo-copilot.git
+cd demo-copilot
+```
 
-2. **Navigate to frontend directory**:
-   ```bash
-   cd frontend
-   ```
+#### 2. Start the .NET Backend (Terminal 1)
 
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+```bash
+cd backend/src/GraphAgentDemo
+dotnet restore
+dotnet run
+```
 
-4. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
+Backend will be available at: `http://localhost:5000`
 
-5. **Open in browser**:
-   ```
-   http://localhost:5173
-   ```
+Verify it's running:
+```bash
+curl http://localhost:5000/health
+```
 
-You should see the demo application home page! 🎉
+#### 3. Start the React Frontend (Terminal 2)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend will be available at: `http://localhost:5173`
+
+#### 4. Open in Browser
+
+Navigate to: `http://localhost:5173`
+
+You should see the demo application with streaming data! 🎉
+
+## 🏗️ Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     React Frontend                          │
+│                  (http://localhost:5173)                    │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │  Components: UserList, ProjectList                  │  │
+│  │  Hooks: useStreamingData, useAGUIProtocol          │  │
+│  │  Services: aguiProtocolService (SignalR client)    │  │
+│  └─────────────────────────────────────────────────────┘  │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ SignalR WebSocket
+                       │ (Real-time bidirectional)
+┌──────────────────────▼──────────────────────────────────────┐
+│                   .NET 8 Backend                            │
+│                (http://localhost:5000)                      │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │  GraphDataHub (SignalR Hub)                        │  │
+│  │      ├─ StreamUsers()                              │  │
+│  │      └─ StreamProjects()                           │  │
+│  │                    ▼                                │  │
+│  │  GraphAgent (Microsoft Agent Pattern)              │  │
+│  │      └─ Implements IAsyncEnumerable streaming      │  │
+│  │                    ▼                                │  │
+│  │  MockDataService                                    │  │
+│  │      └─ 5 Users, 3 Projects                        │  │
+│  └─────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## 📖 Usage
 
 ### Viewing Streamed Users
 
 1. Click **"View Users"** on the home page
-2. Watch as users stream in one at a time from the simulated backend
+2. Watch as users stream in one at a time from the .NET backend
 3. Observe the progress indicator showing streaming status
-4. Click **"Refresh"** or **"Stream Again"** to restart the stream
+4. Click **"Refresh"** to restart the stream
 
 ### Viewing Streamed Projects
 
 1. Click **"View Projects"** on the home page
-2. Watch as projects stream in progressively
+2. Watch as projects stream in progressively from SignalR
 3. Each project shows owner information, status, and member count
 4. Projects are color-coded by status (active, completed, on-hold)
 
@@ -81,53 +123,84 @@ You should see the demo application home page! 🎉
 
 ```
 .
-├── frontend/              # React + TypeScript application
+├── backend/               # .NET 8 Backend
 │   ├── src/
-│   │   ├── types/        # TypeScript interfaces (User, Project, etc.)
-│   │   ├── services/     # GraphAgent & AG-UI Protocol services
-│   │   ├── hooks/        # Custom React hooks (useStreamingData, etc.)
-│   │   ├── components/   # React components
-│   │   │   ├── agui/    # AG-UI base components
-│   │   │   ├── users/   # User-specific components
-│   │   │   └── projects/ # Project-specific components
-│   │   ├── pages/       # Page components (Home, Users, Projects)
-│   │   └── test/        # Test files
-│   ├── specs/           # Feature specifications (Spec Kit)
-│   └── package.json     # Frontend dependencies
-└── README.md            # This file
+│   │   └── GraphAgentDemo/
+│   │       ├── Agents/          # Microsoft Agent Framework implementation
+│   │       ├── Hubs/            # SignalR hubs for real-time streaming
+│   │       ├── Models/          # C# data models (User, Project, etc.)
+│   │       ├── Services/        # Business services (MockDataService)
+│   │       └── Program.cs       # ASP.NET Core configuration
+│   ├── GraphAgentDemo.sln      # Visual Studio solution
+│   └── README.md                # Backend-specific documentation
+│
+└── frontend/              # React + TypeScript Frontend
+    ├── src/
+    │   ├── types/        # TypeScript interfaces
+    │   ├── services/     # SignalR client & GraphAgent
+    │   ├── hooks/        # Custom React hooks
+    │   ├── components/   # React components
+    │   │   ├── agui/    # AG-UI base components
+    │   │   ├── users/   # User-specific components
+    │   │   └── projects/ # Project-specific components
+    │   ├── pages/       # Page components
+    │   └── test/        # Test files
+    ├── specs/           # Feature specifications
+    └── package.json     # Frontend dependencies
 ```
 
 ## 🧪 Available Scripts
 
-### Frontend (React + TypeScript with Vite)
+### Backend (.NET 8)
 
-Navigate to the frontend directory first:
+Navigate to the backend directory:
+
+```bash
+cd backend/src/GraphAgentDemo
+```
+
+Commands:
+- **`dotnet run`** - Start the backend server at http://localhost:5000
+- **`dotnet build`** - Build the project
+- **`dotnet test`** - Run tests (when implemented)
+
+### Frontend (React + TypeScript)
+
+Navigate to the frontend directory:
 
 ```bash
 cd frontend
 ```
 
-Then run any of these commands:
-
-- **`npm run dev`** - Runs the app in development mode at [http://localhost:5173](http://localhost:5173)
-- **`npm run build`** - Builds the app for production to the `dist` folder
-- **`npm run preview`** - Preview the production build locally
-- **`npm run lint`** - Run ESLint to check code quality
+Commands:
+- **`npm run dev`** - Start development server at http://localhost:5173
+- **`npm run build`** - Build for production
+- **`npm run preview`** - Preview production build
+- **`npm run lint`** - Run ESLint
 - **`npm test`** - Run unit tests with Vitest
 
 ## 🎯 Key Technologies
 
-**Frontend**:
+**Backend (.NET 8)**:
+- ASP.NET Core 8
+- SignalR for real-time communication
+- Microsoft Agent Framework pattern
+- Mock Microsoft Graph API data
+- Dependency injection
+- Structured logging
+
+**Frontend (React + TypeScript)**:
 - React 19 with TypeScript 5.9
 - Vite 7 (build tool)
 - React Router 7 (routing)
+- @microsoft/signalr (SignalR client)
 - CSS Modules (scoped styling)
 - Vitest (testing)
 
-**Patterns Demonstrated**:
-- Microsoft Agent Framework pattern (service layer)
-- AG-UI Protocol (simulated streaming)
-- Custom React hooks for state management
+**Communication**:
+- SignalR WebSocket connection
+- Real-time bidirectional streaming
+- Chunked data delivery with progress tracking
 - Component composition and reusability
 
 ## 📚 Learning Resources

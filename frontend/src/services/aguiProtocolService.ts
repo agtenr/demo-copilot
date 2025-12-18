@@ -1,7 +1,7 @@
 import type { User } from '../types/User';
 import type { Project } from '../types/Project';
 import type { StreamResponse } from '../types/StreamResponse';
-import { graphAgent } from './GraphAgent';
+import * as signalR from '@microsoft/signalr';
 
 /**
  * Type for callback functions that receive stream chunks
@@ -9,11 +9,11 @@ import { graphAgent } from './GraphAgent';
 type StreamCallback<T> = (response: StreamResponse<T>) => void;
 
 /**
- * AG-UI Protocol service for simulated streaming from backend
- * In a real implementation, this would use SignalR or WebSockets
- * For this demo, it simulates streaming behavior with chunks and delays
+ * AG-UI Protocol service using SignalR for real-time streaming from .NET backend
+ * Connects to the GraphDataHub endpoint on the backend
  */
 export class AGUIProtocolService {
+  private connection: signalR.HubConnection | null = null;
   private userCallbacks: StreamCallback<User>[] = [];
   private projectCallbacks: StreamCallback<Project>[] = [];
   private completeCallbacks: (() => void)[] = [];
@@ -22,24 +22,78 @@ export class AGUIProtocolService {
   private isStreaming: boolean = false;
 
   /**
-   * Connect to AG-UI Protocol endpoint
-   * In real implementation, this would establish WebSocket/SignalR connection
+   * Connect to SignalR hub on .NET backend
    */
   async connect(): Promise<void> {
-    // Simulate connection delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    this.isConnected = true;
+    if (this.connection) {
+      return;
+    }
+
+    // Create SignalR connection to backend
+    this.connection = new signalR.HubConnectionBuilder()
+      .withUrl('http://localhost:5000/graphhub')
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Information)
+      .build();
+
+    // Set up event handlers
+    this.connection.on('ReceiveUserChunk', (response: StreamResponse<User>) => {
+      this.userCallbacks.forEach(cb => cb(response));
+      
+      if (response.isComplete) {
+        this.isStreaming = false;
+        this.completeCallbacks.forEach(cb => cb());
+      }
+    });
+
+    this.connection.on('ReceiveProjectChunk', (response: StreamResponse<Project>) => {
+      this.projectCallbacks.forEach(cb => cb(response));
+      
+      if (response.isComplete) {
+        this.isStreaming = false;
+        this.completeCallbacks.forEach(cb => cb());
+      }
+    });
+
+    // Handle connection lifecycle
+    this.connection.onclose(() => {
+      this.isConnected = false;
+      console.log('SignalR connection closed');
+    });
+
+    this.connection.onreconnecting(() => {
+      console.log('SignalR reconnecting...');
+    });
+
+    this.connection.onreconnected(() => {
+      this.isConnected = true;
+      console.log('SignalR reconnected');
+    });
+
+    // Start the connection
+    try {
+      await this.connection.start();
+      this.isConnected = true;
+      console.log('SignalR connected to backend');
+    } catch (error) {
+      console.error('Failed to connect to SignalR:', error);
+      throw error;
+    }
   }
 
   /**
-   * Disconnect from AG-UI Protocol endpoint
+   * Disconnect from SignalR hub
    */
   async disconnect(): Promise<void> {
-    this.isConnected = false;
-    this.userCallbacks = [];
-    this.projectCallbacks = [];
-    this.completeCallbacks = [];
-    this.errorCallbacks = [];
+    if (this.connection) {
+      await this.connection.stop();
+      this.connection = null;
+      this.isConnected = false;
+      this.userCallbacks = [];
+      this.projectCallbacks = [];
+      this.completeCallbacks = [];
+      this.errorCallbacks = [];
+    }
   }
 
   /**
@@ -72,11 +126,10 @@ export class AGUIProtocolService {
 
   /**
    * Request backend to start streaming users
-   * Simulates chunked streaming with progressive delivery
    */
   async startStreamingUsers(): Promise<void> {
-    if (!this.isConnected) {
-      const error = 'Not connected to AG-UI Protocol endpoint';
+    if (!this.connection || !this.isConnected) {
+      const error = 'Not connected to SignalR backend';
       this.errorCallbacks.forEach(cb => cb(error));
       throw new Error(error);
     }
@@ -90,58 +143,22 @@ export class AGUIProtocolService {
     this.isStreaming = true;
 
     try {
-      // Get all users from GraphAgent
-      const users = await graphAgent.getUsers();
-      
-      // Stream users one at a time with delays to simulate real-time streaming
-      for (let i = 0; i < users.length; i++) {
-        const response: StreamResponse<User> = {
-          data: users[i],
-          isComplete: i === users.length - 1,
-          error: null,
-          chunkIndex: i,
-          totalChunks: users.length,
-          timestamp: new Date().toISOString()
-        };
-
-        // Deliver chunk to all registered callbacks
-        this.userCallbacks.forEach(cb => cb(response));
-
-        // Add delay between chunks for realistic streaming visualization
-        if (i < users.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-      }
-
-      // Notify completion
-      this.completeCallbacks.forEach(cb => cb());
+      // Invoke StreamUsers method on backend hub
+      await this.connection.invoke('StreamUsers');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Send error response
-      const errorResponse: StreamResponse<User> = {
-        data: null,
-        isComplete: true,
-        error: errorMessage,
-        chunkIndex: 0,
-        totalChunks: 0,
-        timestamp: new Date().toISOString()
-      };
-      
-      this.userCallbacks.forEach(cb => cb(errorResponse));
       this.errorCallbacks.forEach(cb => cb(errorMessage));
-    } finally {
       this.isStreaming = false;
+      throw error;
     }
   }
 
   /**
    * Request backend to start streaming projects
-   * Simulates chunked streaming with progressive delivery
    */
   async startStreamingProjects(): Promise<void> {
-    if (!this.isConnected) {
-      const error = 'Not connected to AG-UI Protocol endpoint';
+    if (!this.connection || !this.isConnected) {
+      const error = 'Not connected to SignalR backend';
       this.errorCallbacks.forEach(cb => cb(error));
       throw new Error(error);
     }
@@ -155,48 +172,13 @@ export class AGUIProtocolService {
     this.isStreaming = true;
 
     try {
-      // Get all projects from GraphAgent
-      const projects = await graphAgent.getProjects();
-      
-      // Stream projects one at a time with delays
-      for (let i = 0; i < projects.length; i++) {
-        const response: StreamResponse<Project> = {
-          data: projects[i],
-          isComplete: i === projects.length - 1,
-          error: null,
-          chunkIndex: i,
-          totalChunks: projects.length,
-          timestamp: new Date().toISOString()
-        };
-
-        // Deliver chunk to all registered callbacks
-        this.projectCallbacks.forEach(cb => cb(response));
-
-        // Add delay between chunks for realistic streaming visualization
-        if (i < projects.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-      }
-
-      // Notify completion
-      this.completeCallbacks.forEach(cb => cb());
+      // Invoke StreamProjects method on backend hub
+      await this.connection.invoke('StreamProjects');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Send error response
-      const errorResponse: StreamResponse<Project> = {
-        data: null,
-        isComplete: true,
-        error: errorMessage,
-        chunkIndex: 0,
-        totalChunks: 0,
-        timestamp: new Date().toISOString()
-      };
-      
-      this.projectCallbacks.forEach(cb => cb(errorResponse));
       this.errorCallbacks.forEach(cb => cb(errorMessage));
-    } finally {
       this.isStreaming = false;
+      throw error;
     }
   }
 
@@ -205,7 +187,7 @@ export class AGUIProtocolService {
    */
   async stopStreaming(): Promise<void> {
     this.isStreaming = false;
-    // In real implementation, would send stop signal to backend
+    // SignalR doesn't need explicit stop, just set flag
   }
 
   /**
