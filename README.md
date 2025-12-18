@@ -6,12 +6,14 @@ A starter project template with React + TypeScript frontend (using Vite), struct
 
 ```
 .
+├── .github/
+│   └── instructions/
+│       └── copilot-instructions.md  # Development best practices
 ├── frontend/          # React + TypeScript application (Vite)
 │   ├── src/          # Source code
 │   ├── public/       # Static assets
 │   └── package.json  # Frontend dependencies
-├── .gitignore        # Git ignore rules for frontend and backend
-└── copilot-instructions.md  # Development best practices
+└── .gitignore        # Git ignore rules for frontend and backend
 ```
 
 ## Getting Started
@@ -38,4 +40,4 @@ The project structure is prepared for adding a .NET backend. When ready, the bac
 
 ## Development Guidelines
 
-Please refer to [copilot-instructions.md](./copilot-instructions.md) for best practices when developing for this project. The key principle is to **keep it simple**.
+Please refer to [.github/instructions/copilot-instructions.md](./.github/instructions/copilot-instructions.md) for best practices when developing for this project. The key principle is to **keep it simple**.
