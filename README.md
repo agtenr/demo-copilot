@@ -2,6 +2,16 @@
 
 A starter project template with React + TypeScript frontend (using Vite), structured to accommodate a .NET backend in the future.
 
+## 📚 Demo Specifications
+
+This repository includes comprehensive specifications built with GitHub Spec Kit:
+
+- **[AG-UI & Microsoft Agent Framework Integration](./frontend/specs/001-agui-msagent-integration/)** - A demonstration application showing how to integrate AG-UI components with Microsoft Agent Framework to fetch and display data from Microsoft Graph API (mock mode).
+  - Complete specification with user stories, requirements, and success criteria
+  - Technical implementation plan and research
+  - Data models and API contracts
+  - Quick start guide for novice developers
+
 ## Project Structure
 
 ```
@@ -10,6 +20,7 @@ A starter project template with React + TypeScript frontend (using Vite), struct
 │   └── instructions/
 │       └── copilot-instructions.md  # Development best practices
 ├── frontend/          # React + TypeScript application (Vite)
+│   ├── specs/        # Feature specifications (Spec Kit)
 │   ├── src/          # Source code
 │   ├── public/       # Static assets
 │   └── package.json  # Frontend dependencies
