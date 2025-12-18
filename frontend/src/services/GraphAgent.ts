@@ -88,7 +88,7 @@ export class GraphAgent implements IGraphAgent {
    */
   async getUserById(id: string): Promise<User | null> {
     if (!id || typeof id !== 'string') {
-      throw new Error('Failed to fetch user: Invalid ID format');
+      throw new Error('Invalid user ID provided');
     }
 
     // Simulate realistic API delay
@@ -109,7 +109,7 @@ export class GraphAgent implements IGraphAgent {
    */
   async getProjectById(id: string): Promise<Project | null> {
     if (!id || typeof id !== 'string') {
-      throw new Error('Failed to fetch project: Invalid ID format');
+      throw new Error('Invalid project ID provided');
     }
 
     // Simulate realistic API delay

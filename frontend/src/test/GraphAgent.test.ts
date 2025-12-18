@@ -95,7 +95,7 @@ describe('GraphAgent', () => {
     });
 
     it('should throw error for invalid ID format', async () => {
-      await expect(graphAgent.getUserById('')).rejects.toThrow('Invalid ID format');
+      await expect(graphAgent.getUserById('')).rejects.toThrow('Invalid user ID provided');
     });
   });
 
