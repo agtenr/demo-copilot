@@ -15,6 +15,12 @@ When developing for this project, always prioritize simplicity over complexity. 
 - Keep components small and focused (ideally under 200 lines)
 - Use TypeScript strictly - avoid `any` types when possible
 
+### Project Setup (Vite)
+- Leverage Vite's fast HMR (Hot Module Replacement) for quick development
+- Use environment variables with `VITE_` prefix for configuration
+- Keep the vite.config.ts simple and only add plugins when needed
+- Use Vite's built-in asset handling for imports
+
 ### Component Structure
 - Start with the simplest implementation that works
 - Organize files by feature, not by type

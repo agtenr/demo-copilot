@@ -1,12 +1,12 @@
 # demo-copilot
 
-A starter project template with React + TypeScript frontend, structured to accommodate a .NET backend in the future.
+A starter project template with React + TypeScript frontend (using Vite), structured to accommodate a .NET backend in the future.
 
 ## Project Structure
 
 ```
 .
-├── frontend/          # React + TypeScript application
+├── frontend/          # React + TypeScript application (Vite)
 │   ├── src/          # Source code
 │   ├── public/       # Static assets
 │   └── package.json  # Frontend dependencies
@@ -16,7 +16,7 @@ A starter project template with React + TypeScript frontend, structured to accom
 
 ## Getting Started
 
-### Frontend (React + TypeScript)
+### Frontend (React + TypeScript with Vite)
 
 Navigate to the frontend directory and install dependencies:
 
@@ -27,9 +27,10 @@ npm install
 
 #### Available Scripts
 
-- `npm start` - Runs the app in development mode at [http://localhost:3000](http://localhost:3000)
-- `npm test` - Launches the test runner in interactive watch mode
-- `npm run build` - Builds the app for production to the `build` folder
+- `npm run dev` - Runs the app in development mode at [http://localhost:5173](http://localhost:5173)
+- `npm run build` - Builds the app for production to the `dist` folder
+- `npm run preview` - Preview the production build locally
+- `npm run lint` - Run ESLint to check code quality
 
 ## Future Backend (.NET)
 
