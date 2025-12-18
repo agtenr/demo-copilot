@@ -7,38 +7,54 @@
 
 ## Summary
 
-Build a simple, novice-friendly demonstration application that integrates AG-UI (front-end component library) and Microsoft Agent Framework (agent pattern implementation) with a mock Microsoft Graph API agent. The application will fetch and display user and project data using modern React patterns, TypeScript, and clean architecture principles. The goal is to provide clear, reusable examples for developers learning how to integrate these tools.
+Build a simple, novice-friendly demonstration application that integrates AG-UI (front-end component library) and Microsoft Agent Framework (.NET backend using Semantic Kernel) with real-time streaming of Microsoft Graph API data. The application consists of a .NET backend agent that extracts and summarizes user and project data, streams it to a React frontend via SignalR/SSE, and displays it using AG-UI components with progressive rendering. The goal is to provide clear, reusable examples for developers learning how to integrate .NET agents with modern React frontends.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.9+, React 19+, Node.js 18+  
-**Primary Dependencies**: 
-- AG-UI (to be determined based on availability, fallback to modern React UI library)
-- Microsoft Agent Framework (to be researched, likely custom implementation of agent pattern)
-- Vite 7+ (already configured)
-- React Router (for navigation between user/project views)
+**Backend**:
+- Language/Version: C# with .NET 8+
+- Primary Framework: Microsoft Semantic Kernel (Agent Framework)
+- Streaming: SignalR or Server-Sent Events (SSE)
+- Graph API: Microsoft.Graph SDK (with mock mode)
 
-**Storage**: Mock in-memory data (JSON objects), no persistent storage required  
-**Testing**: Vitest (to be added), React Testing Library (for component testing)  
-**Target Platform**: Modern web browsers (Chrome, Firefox, Safari), responsive design for desktop and mobile  
-**Project Type**: Single-page web application (SPA)  
+**Frontend**:
+- Language/Version: TypeScript 5.9+, React 19+, Node.js 18+
+- Primary Dependencies:
+  - AG-UI (to be determined based on availability, fallback to modern React UI library)
+  - SignalR Client (Microsoft.AspNetCore.SignalR.Client) or EventSource for SSE
+  - Vite 7+ (already configured)
+  - React Router (for navigation between user/project views)
+
+**Storage**: Mock in-memory data (JSON objects) in .NET backend, no persistent storage required  
+**Testing**: 
+- Backend: xUnit for .NET
+- Frontend: Vitest, React Testing Library
+
+**Target Platform**: 
+- Backend: Cross-platform (.NET 8+, runs on Windows/Mac/Linux)
+- Frontend: Modern web browsers (Chrome, Firefox, Safari), responsive design for desktop and mobile
+
+**Project Type**: Full-stack web application (.NET backend API + React SPA frontend)
+
 **Performance Goals**: 
 - Initial page load < 2 seconds
-- Mock API response time < 100ms
-- Smooth 60fps UI interactions
+- Stream chunk delivery < 100ms per chunk
+- Smooth 60fps UI interactions during streaming
+- Backend agent summarization < 500ms
 
 **Constraints**: 
 - Must be simple enough for novice developers to understand
-- Zero external API dependencies (all mocked)
-- Maximum 5-minute setup time from clone to running
+- Zero external API dependencies in mock mode (all mocked in .NET)
+- Maximum 10-minute setup time from clone to running both backend and frontend
 - All integration points must be clearly documented
+- Streaming must work across modern browsers
 
 **Scale/Scope**: 
-- Single demo application
-- ~10 React components
+- .NET backend: ~5-8 classes, 1 agent, 1 streaming hub
+- React frontend: ~10 React components
 - 2 main views (Users, Projects)
 - Mock data for 5+ users, 3+ projects
-- ~500-1000 lines of application code
+- ~1500-2000 lines of total application code
 
 ## Constitution Check
 
@@ -77,60 +93,91 @@ specs/001-agui-msagent-integration/
     └── api-responses.md # Mock API response schemas
 ```
 
-### Source Code (frontend directory)
+### Source Code (repository structure)
 
 ```text
-frontend/
-├── src/
-│   ├── agents/                    # Microsoft Agent Framework implementation
-│   │   ├── GraphAgent.ts         # Main agent class for Graph API
-│   │   ├── types.ts              # Agent-related TypeScript types
-│   │   └── mockData.ts           # Mock user and project data
-│   │
-│   ├── components/                # React components
-│   │   ├── common/               # Reusable AG-UI wrapped components
-│   │   │   ├── Card.tsx          # AG-UI card wrapper
-│   │   │   ├── Button.tsx        # AG-UI button wrapper
-│   │   │   ├── LoadingSpinner.tsx # Loading state component
-│   │   │   └── ErrorDisplay.tsx  # Error state component
+.
+├── backend/                           # .NET Backend Application
+│   ├── src/
+│   │   ├── GraphAgentDemo/           # Main .NET project
+│   │   │   ├── Agents/               # Microsoft Agent Framework agents
+│   │   │   │   ├── GraphAgent.cs     # Main agent using Semantic Kernel
+│   │   │   │   ├── GraphSummarizer.cs # Data summarization logic
+│   │   │   │   └── IGraphAgent.cs    # Agent interface
+│   │   │   │
+│   │   │   ├── Hubs/                 # SignalR hubs for streaming
+│   │   │   │   └── GraphDataHub.cs   # Real-time streaming hub
+│   │   │   │
+│   │   │   ├── Models/               # Data models
+│   │   │   │   ├── User.cs           # User entity
+│   │   │   │   ├── Project.cs        # Project entity
+│   │   │   │   └── StreamResponse.cs # Streaming response wrapper
+│   │   │   │
+│   │   │   ├── Services/             # Business logic services
+│   │   │   │   ├── GraphService.cs   # Graph API service
+│   │   │   │   └── MockDataService.cs # Mock data provider
+│   │   │   │
+│   │   │   ├── Program.cs            # Application entry point
+│   │   │   └── appsettings.json      # Configuration
 │   │   │
-│   │   ├── users/                # User-related components
-│   │   │   ├── UserList.tsx      # List of users
-│   │   │   └── UserCard.tsx      # Individual user card
-│   │   │
-│   │   └── projects/             # Project-related components
-│   │       ├── ProjectList.tsx   # List of projects
-│   │       └── ProjectCard.tsx   # Individual project card
+│   │   └── GraphAgentDemo.Tests/     # xUnit test project
+│   │       ├── AgentTests.cs
+│   │       └── SummarizerTests.cs
 │   │
-│   ├── pages/                     # Page components
-│   │   ├── UsersPage.tsx         # Users view page
-│   │   ├── ProjectsPage.tsx      # Projects view page
-│   │   └── HomePage.tsx          # Landing page
-│   │
-│   ├── hooks/                     # Custom React hooks
-│   │   ├── useGraphAgent.ts      # Hook for using GraphAgent
-│   │   └── useApiState.ts        # Hook for managing API state
-│   │
-│   ├── types/                     # TypeScript type definitions
-│   │   ├── User.ts               # User entity types
-│   │   ├── Project.ts            # Project entity types
-│   │   └── ApiResponse.ts        # API response types
-│   │
-│   ├── App.tsx                    # Main app component
-│   ├── main.tsx                   # Entry point (existing)
-│   └── App.css                    # Global styles (existing)
+│   ├── GraphAgentDemo.sln            # .NET solution file
+│   └── README.md                      # Backend setup instructions
 │
-├── tests/                         # Test files (to be created)
-│   ├── unit/                     # Unit tests
-│   │   ├── agents/
-│   │   └── components/
-│   └── integration/              # Integration tests
-│       └── user-flow.test.tsx
-│
-└── README.md                      # Updated with setup instructions
+└── frontend/                          # React Frontend Application
+    ├── src/
+    │   ├── services/                  # Backend integration services
+    │   │   ├── signalrService.ts     # SignalR client for streaming
+    │   │   └── streamingClient.ts    # Streaming data client
+    │   │
+    │   ├── components/                # React components
+    │   │   ├── agui/                 # AG-UI component wrappers
+    │   │   │   ├── AGCard.tsx        # AG-UI card wrapper
+    │   │   │   ├── AGButton.tsx      # AG-UI button wrapper
+    │   │   │   ├── AGStreamingList.tsx # Streaming list component
+    │   │   │   ├── LoadingSpinner.tsx # Loading state component
+    │   │   │   └── ErrorDisplay.tsx  # Error state component
+    │   │   │
+    │   │   ├── users/                # User-related components
+    │   │   │   ├── UserList.tsx      # List of users (streaming)
+    │   │   │   └── UserCard.tsx      # Individual user card
+    │   │   │
+    │   │   └── projects/             # Project-related components
+    │   │       ├── ProjectList.tsx   # List of projects (streaming)
+    │   │       └── ProjectCard.tsx   # Individual project card
+    │   │
+    │   ├── pages/                     # Page components
+    │   │   ├── UsersPage.tsx         # Users view page
+    │   │   ├── ProjectsPage.tsx      # Projects view page
+    │   │   └── HomePage.tsx          # Landing page
+    │   │
+    │   ├── hooks/                     # Custom React hooks
+    │   │   ├── useStreamingData.ts   # Hook for streaming data
+    │   │   └── useSignalR.ts         # Hook for SignalR connection
+    │   │
+    │   ├── types/                     # TypeScript type definitions
+    │   │   ├── User.ts               # User entity types
+    │   │   ├── Project.ts            # Project entity types
+    │   │   └── StreamResponse.ts     # Streaming response types
+    │   │
+    │   ├── App.tsx                    # Main app component
+    │   ├── main.tsx                   # Entry point (existing)
+    │   └── App.css                    # Global styles (existing)
+    │
+    ├── tests/                         # Test files (to be created)
+    │   ├── unit/                     # Unit tests
+    │   │   ├── services/
+    │   │   └── components/
+    │   └── integration/              # Integration tests
+    │       └── streaming-flow.test.tsx
+    │
+    └── README.md                      # Frontend setup instructions
 ```
 
-**Structure Decision**: Single project structure selected as this is a focused demo application with frontend-only code. The agent pattern is implemented as a service layer within the frontend, not as a separate backend service. This keeps the demo simple and self-contained while still demonstrating the separation of concerns between UI components and data fetching logic.
+**Structure Decision**: Full-stack structure with separate backend and frontend projects. The .NET backend implements Microsoft Agent Framework (Semantic Kernel) to handle Graph API interactions, data summarization, and real-time streaming via SignalR. The React frontend connects to the streaming endpoint and uses AG-UI components to progressively render data as it arrives. This demonstrates proper separation of concerns and realistic architecture patterns while remaining simple enough for educational purposes.
 
 ## Complexity Tracking
 

@@ -20,19 +20,20 @@
   - Demonstrated to users independently
 -->
 
-### User Story 1 - View Mock Graph API Data (Priority: P1)
+### User Story 1 - View Streamed Graph API Data (Priority: P1)
 
-A novice developer wants to see how to fetch and display user and project data from Microsoft Graph API in a simple React application.
+A novice developer wants to see how to fetch and display user and project data from Microsoft Graph API using a .NET backend agent that streams summarized data to a React frontend via AG-UI.
 
-**Why this priority**: This is the foundation of the demo - demonstrating basic API integration and data display. Without this working, the other components have nothing to show.
+**Why this priority**: This is the foundation of the demo - demonstrating the .NET Agent Framework integration with real-time streaming to the frontend. Without this working, the other components have nothing to show.
 
-**Independent Test**: Can be fully tested by running the application and verifying that mock user and project data is displayed on the screen. Delivers immediate value by showing a working data flow.
+**Independent Test**: Can be fully tested by running the .NET backend and React frontend, then verifying that user and project data is streamed from the .NET agent and displayed in real-time on the screen. Delivers immediate value by showing a working streaming data flow.
 
 **Acceptance Scenarios**:
 
-1. **Given** the application is running, **When** the user opens the home page, **Then** they see a list of mock users retrieved from the Microsoft Graph API agent
-2. **Given** the application is running, **When** the user navigates to the projects view, **Then** they see a list of mock projects retrieved from the Microsoft Graph API agent
-3. **Given** the API agent returns an error, **When** the user loads the page, **Then** they see a friendly error message
+1. **Given** the .NET backend agent is running, **When** the user opens the home page, **Then** they see a list of users being streamed from the .NET agent and displayed via AG-UI components
+2. **Given** the .NET backend agent is running, **When** the user navigates to the projects view, **Then** they see a list of projects being streamed from the .NET agent with summarized information
+3. **Given** the .NET agent summarizes Graph data, **When** streaming to the frontend, **Then** the AG-UI components update in real-time as data chunks arrive
+4. **Given** the .NET agent returns an error, **When** the frontend requests data, **Then** the user sees a friendly error message via AG-UI error component
 
 ---
 
@@ -52,19 +53,20 @@ A developer wants to understand how to integrate AG-UI components for displaying
 
 ---
 
-### User Story 3 - Microsoft Agent Framework Implementation (Priority: P3)
+### User Story 3 - .NET Agent Framework Implementation (Priority: P1)
 
-A developer wants to see how to structure an agent using Microsoft Agent Framework that encapsulates the Microsoft Graph API logic.
+A developer wants to see how to implement a .NET backend agent using Microsoft Agent Framework (Semantic Kernel) that extracts, summarizes, and streams Microsoft Graph API data to the frontend.
 
-**Why this priority**: This demonstrates the agent pattern and how to separate concerns between UI and data fetching. It's valuable but the app can function without it using direct API calls.
+**Why this priority**: This demonstrates the core Agent Framework pattern and how to structure a .NET backend that integrates with Microsoft Graph API and streams data to a React frontend. This is essential for the demo's educational value.
 
-**Independent Test**: Can be tested by verifying that the agent handles requests, returns properly formatted data, and can be easily mocked or swapped out.
+**Independent Test**: Can be tested by verifying that the .NET agent correctly calls Microsoft Graph API (or mock), summarizes the data, and streams it via SignalR/Server-Sent Events to connected clients.
 
 **Acceptance Scenarios**:
 
-1. **Given** the application needs user data, **When** the UI component requests it through the agent, **Then** the agent returns a standardized data format
-2. **Given** the agent is configured with mock mode, **When** any data request is made, **Then** it returns predefined mock data without actual API calls
-3. **Given** the agent receives an invalid request, **When** the UI makes the request, **Then** the agent returns a proper error response with details
+1. **Given** the .NET agent is configured with Microsoft Agent Framework, **When** a request is made for user data, **Then** the agent extracts users from Graph API, summarizes them, and streams the results
+2. **Given** the agent is configured with mock mode, **When** any data request is made, **Then** it returns predefined mock data in the same streaming format as real data
+3. **Given** the agent receives an invalid request, **When** processing the request, **Then** it returns a proper error response with details
+4. **Given** the agent summarizes Graph data, **When** streaming to clients, **Then** it sends data in chunks that can be progressively rendered by AG-UI components
 
 ---
 
@@ -96,37 +98,45 @@ A novice developer wants to clone the repository and run the demo application wi
 
 ### Functional Requirements
 
-- **FR-001**: System MUST provide a mock Microsoft Graph API agent that returns sample user data
-- **FR-002**: System MUST provide a mock Microsoft Graph API agent that returns sample project data
-- **FR-003**: Users MUST be able to view a list of users with at least name, email, and department fields
-- **FR-004**: Users MUST be able to view a list of projects with at least name, status, and owner fields
-- **FR-005**: System MUST use AG-UI components for all data display (cards, lists, buttons)
-- **FR-006**: System MUST implement Microsoft Agent Framework pattern to encapsulate data fetching logic
-- **FR-007**: System MUST display loading states while data is being fetched
-- **FR-008**: System MUST display error states when data fetching fails
-- **FR-009**: System MUST provide clear code comments explaining integration points
-- **FR-010**: System MUST include a README with setup instructions targeting novice developers
-- **FR-011**: System MUST work with Node.js version 18 or higher
-- **FR-012**: System MUST use React 19+ and TypeScript for type safety
-- **FR-013**: Mock data MUST be realistic and representative of actual Microsoft Graph API responses
-- **FR-014**: All components MUST be responsive and work on desktop and mobile viewports
+- **FR-001**: System MUST implement a .NET backend using Microsoft Agent Framework (Semantic Kernel) for agent logic
+- **FR-002**: .NET agent MUST extract and summarize user data from Microsoft Graph API (or mock)
+- **FR-003**: .NET agent MUST extract and summarize project data from Microsoft Graph API (or mock)
+- **FR-004**: .NET agent MUST stream summarized data to frontend using SignalR or Server-Sent Events
+- **FR-005**: Frontend MUST connect to .NET backend streaming endpoint and handle real-time data updates
+- **FR-006**: Users MUST be able to view a list of users with at least name, email, and department fields
+- **FR-007**: Users MUST be able to view a list of projects with at least name, status, and owner fields
+- **FR-008**: System MUST use AG-UI components for all data display and streaming visualization (cards, lists, streaming indicators)
+- **FR-009**: System MUST display loading states while data is being streamed from the .NET agent
+- **FR-010**: System MUST display error states when streaming or data fetching fails
+- **FR-011**: AG-UI components MUST progressively render data as it streams from the .NET backend
+- **FR-012**: System MUST provide clear code comments explaining integration points between .NET agent, streaming, and AG-UI
+- **FR-013**: System MUST include a README with setup instructions for both .NET backend and React frontend targeting novice developers
+- **FR-014**: Backend MUST work with .NET 8 or higher
+- **FR-015**: Frontend MUST work with Node.js version 18 or higher
+- **FR-016**: Frontend MUST use React 19+ and TypeScript for type safety
+- **FR-017**: Mock data MUST be realistic and representative of actual Microsoft Graph API responses
+- **FR-018**: All components MUST be responsive and work on desktop and mobile viewports
 
 ### Key Entities
 
 - **User**: Represents a Microsoft 365 user with properties: id, displayName, email, jobTitle, department, officeLocation
 - **Project**: Represents a project/team with properties: id, name, description, status (active/completed/on-hold), owner (User reference), createdDate, memberCount
-- **GraphAgent**: Service class implementing Microsoft Agent Framework pattern that handles all Graph API interactions
-- **ApiResponse**: Generic response wrapper with properties: data, loading, error, timestamp
+- **GraphAgent (.NET)**: .NET service class implementing Microsoft Agent Framework (Semantic Kernel) that handles all Graph API interactions, summarization, and streaming
+- **StreamingHub**: SignalR hub or SSE endpoint for real-time data streaming from .NET backend to React frontend
+- **StreamResponse**: Data structure for streamed chunks with properties: data, isComplete, error, chunkIndex
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: A novice developer can clone, install, and run the application successfully within 5 minutes following the README
-- **SC-002**: The application displays mock user and project data within 2 seconds of page load
-- **SC-003**: All AG-UI components render consistently across Chrome, Firefox, and Safari browsers
-- **SC-004**: Code comments and documentation explain 100% of the integration points between AG-UI, Microsoft Agent Framework, and the mock Graph API
-- **SC-005**: The application includes at least 3 reusable examples: data fetching via agent, AG-UI component usage, error handling pattern
-- **SC-006**: TypeScript compilation produces zero errors
+- **SC-001**: A novice developer can clone, install, and run both .NET backend and React frontend successfully within 10 minutes following the README
+- **SC-002**: The .NET agent successfully connects to Microsoft Graph API (mock mode) and summarizes data
+- **SC-003**: The application displays streamed user and project data with progressive rendering as chunks arrive from the .NET backend
+- **SC-004**: All AG-UI components render consistently across Chrome, Firefox, and Safari browsers and handle streaming data updates
+- **SC-005**: Code comments and documentation explain 100% of the integration points between .NET Agent Framework, streaming layer, AG-UI components, and Graph API
+- **SC-006**: The application includes at least 4 reusable examples: .NET agent implementation, streaming from backend, AG-UI component usage with streaming, error handling pattern
+- **SC-007**: Both .NET and TypeScript code compilation produces zero errors
+- **SC-008**: The .NET agent provides at least 5 sample users and 3 sample projects via streaming
+- **SC-009**: AG-UI components smoothly update as streaming data arrives without flickering or layout shifts
 - **SC-007**: The mock agent provides at least 5 sample users and 3 sample projects
 - **SC-008**: Application passes ESLint checks with zero errors

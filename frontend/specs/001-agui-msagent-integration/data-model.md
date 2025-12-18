@@ -3,11 +3,11 @@
 **Feature**: AG-UI & Microsoft Agent Framework Integration  
 **Phase**: 1 - Design & Contracts  
 **Date**: 2025-12-18  
-**Status**: Complete
+**Status**: Updated for .NET Backend & Streaming
 
 ## Overview
 
-This document defines the data structures used in the demo application. All types are based on Microsoft Graph API v1.0 schema to ensure realistic, educational examples.
+This document defines the data structures used in the demo application across both .NET backend and React frontend. All types are based on Microsoft Graph API v1.0 schema to ensure realistic, educational examples. Includes streaming response types for real-time data delivery.
 
 ## Core Entities
 
@@ -15,6 +15,46 @@ This document defines the data structures used in the demo application. All type
 
 Represents a Microsoft 365 user retrieved from Microsoft Graph API.
 
+**C# (.NET Backend)**:
+```csharp
+/// <summary>
+/// User entity based on Microsoft Graph API User resource
+/// </summary>
+public class User
+{
+    /// <summary>Unique identifier for the user (GUID format)</summary>
+    public string Id { get; set; } = string.Empty;
+    
+    /// <summary>User's display name (full name)</summary>
+    public string DisplayName { get; set; } = string.Empty;
+    
+    /// <summary>User's given name (first name)</summary>
+    public string? GivenName { get; set; }
+    
+    /// <summary>User's surname (last name)</summary>
+    public string? Surname { get; set; }
+    
+    /// <summary>Primary email address</summary>
+    public string Mail { get; set; } = string.Empty;
+    
+    /// <summary>User's job title</summary>
+    public string JobTitle { get; set; } = string.Empty;
+    
+    /// <summary>Department name</summary>
+    public string Department { get; set; } = string.Empty;
+    
+    /// <summary>Physical office location</summary>
+    public string? OfficeLocation { get; set; }
+    
+    /// <summary>User's business phone numbers</summary>
+    public List<string>? BusinessPhones { get; set; }
+    
+    /// <summary>AI-generated summary (from Semantic Kernel)</summary>
+    public string? Summary { get; set; }
+}
+```
+
+**TypeScript (React Frontend)**:
 ```typescript
 /**
  * User entity based on Microsoft Graph API User resource
@@ -47,6 +87,9 @@ interface User {
   
   /** User's business phone numbers */
   businessPhones?: string[];
+  
+  /** AI-generated summary (from .NET agent) */
+  summary?: string;
 }
 ```
 
@@ -142,16 +185,94 @@ type ProjectStatus = 'active' | 'completed' | 'on-hold';
 }
 ```
 
+## Streaming Response Wrapper
+
+### StreamResponse<T>
+
+Wrapper for streaming data chunks from .NET backend to React frontend.
+
+**C# (.NET Backend)**:
+```csharp
+/// <summary>
+/// Streaming response wrapper for real-time data delivery
+/// </summary>
+public class StreamResponse<T>
+{
+    /// <summary>Data payload for this chunk</summary>
+    public T? Data { get; set; }
+    
+    /// <summary>Whether this is the final chunk</summary>
+    public bool IsComplete { get; set; }
+    
+    /// <summary>Error message if chunk delivery failed</summary>
+    public string? Error { get; set; }
+    
+    /// <summary>Sequential chunk index (0-based)</summary>
+    public int ChunkIndex { get; set; }
+    
+    /// <summary>Total number of chunks (if known)</summary>
+    public int? TotalChunks { get; set; }
+    
+    /// <summary>Timestamp when chunk was sent</summary>
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+```
+
+**TypeScript (React Frontend)**:
+```typescript
+/**
+ * Streaming response wrapper for real-time data delivery from .NET backend
+ */
+interface StreamResponse<T> {
+  /** Data payload for this chunk */
+  data: T | null;
+  
+  /** Whether this is the final chunk in the stream */
+  isComplete: boolean;
+  
+  /** Error message if chunk delivery failed */
+  error: string | null;
+  
+  /** Sequential chunk index (0-based) */
+  chunkIndex: number;
+  
+  /** Total number of chunks (if known, null if unknown) */
+  totalChunks: number | null;
+  
+  /** Timestamp when chunk was sent (ISO 8601 format) */
+  timestamp: string;
+}
+```
+
+**Usage Example**:
+```typescript
+// Frontend receiving streamed users
+connection.on("ReceiveUserChunk", (response: StreamResponse<User>) => {
+  if (response.error) {
+    setError(response.error);
+    return;
+  }
+  
+  if (response.data) {
+    setUsers(prev => [...prev, response.data!]);
+  }
+  
+  if (response.isComplete) {
+    setIsStreaming(false);
+  }
+});
+```
+
 ## API Response Wrapper
 
 ### ApiResponse<T>
 
-Generic wrapper for all API responses to provide consistent state management across the application.
+Generic wrapper for non-streaming API responses to provide consistent state management.
 
 ```typescript
 /**
  * Generic API response wrapper with loading and error states
- * Used by hooks to manage async operations
+ * Used by hooks to manage async operations (non-streaming)
  */
 interface ApiResponse<T> {
   /** The actual data returned from the API (null if loading or error) */
@@ -185,51 +306,139 @@ const userResponse: ApiResponse<User[]> = {
 
 ## Agent Interface
 
-### IGraphAgent
+### IGraphAgent (.NET Backend)
 
-Interface defining the contract for Microsoft Graph API agent.
+Interface defining the contract for .NET Microsoft Graph API agent using Semantic Kernel.
 
+**C# (.NET Backend)**:
+```csharp
+/// <summary>
+/// Graph API Agent Interface using Microsoft Semantic Kernel
+/// Defines methods for extracting, summarizing, and streaming Graph API data
+/// </summary>
+public interface IGraphAgent
+{
+    /// <summary>
+    /// Stream all users with AI summarization
+    /// </summary>
+    /// <returns>Async enumerable of users with summaries</returns>
+    IAsyncEnumerable<User> StreamUsersAsync(CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Stream all projects with AI summarization
+    /// </summary>
+    /// <returns>Async enumerable of projects with summaries</returns>
+    IAsyncEnumerable<Project> StreamProjectsAsync(CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get a single user by ID (non-streaming)
+    /// </summary>
+    /// <param name="id">User GUID</param>
+    /// <returns>User or null if not found</returns>
+    Task<User?> GetUserByIdAsync(string id, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get a single project by ID (non-streaming)
+    /// </summary>
+    /// <param name="id">Project GUID</param>
+    /// <returns>Project or null if not found</returns>
+    Task<Project?> GetProjectByIdAsync(string id, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Enable or disable mock mode
+    /// </summary>
+    /// <param name="enabled">Whether to use mock data</param>
+    void SetMockMode(bool enabled);
+}
+```
+
+### SignalR Hub Interface
+
+Interface for real-time streaming hub.
+
+**C# (.NET Backend)**:
+```csharp
+/// <summary>
+/// SignalR hub for streaming Graph data to React frontend
+/// </summary>
+public interface IGraphDataHub
+{
+    /// <summary>
+    /// Start streaming users to the connected client
+    /// </summary>
+    Task StreamUsers();
+    
+    /// <summary>
+    /// Start streaming projects to the connected client
+    /// </summary>
+    Task StreamProjects();
+    
+    /// <summary>
+    /// Stop current streaming operation
+    /// </summary>
+    Task StopStreaming();
+}
+```
+
+**TypeScript (React Frontend - SignalR Service)**:
 ```typescript
 /**
- * Graph API Agent Interface
- * Defines methods for interacting with Microsoft Graph API (mock or real)
+ * SignalR service for connecting to .NET backend streaming hub
  */
-interface IGraphAgent {
+interface ISignalRService {
   /**
-   * Retrieve all users
-   * @returns Promise resolving to array of users
-   * @throws Error if fetch fails
+   * Connect to SignalR hub
+   * @returns Promise that resolves when connected
    */
-  getUsers(): Promise<User[]>;
+  connect(): Promise<void>;
   
   /**
-   * Retrieve all projects
-   * @returns Promise resolving to array of projects
-   * @throws Error if fetch fails
+   * Disconnect from SignalR hub
+   * @returns Promise that resolves when disconnected
    */
-  getProjects(): Promise<Project[]>;
+  disconnect(): Promise<void>;
   
   /**
-   * Retrieve a single user by ID
-   * @param id - User GUID
-   * @returns Promise resolving to user or null if not found
-   * @throws Error if fetch fails
+   * Register callback for receiving user chunks
+   * @param callback Function to call when user chunk arrives
    */
-  getUserById(id: string): Promise<User | null>;
+  onUserReceived(callback: (response: StreamResponse<User>) => void): void;
   
   /**
-   * Retrieve a single project by ID
-   * @param id - Project GUID
-   * @returns Promise resolving to project or null if not found
-   * @throws Error if fetch fails
+   * Register callback for receiving project chunks
+   * @param callback Function to call when project chunk arrives
    */
-  getProjectById(id: string): Promise<Project | null>;
+  onProjectReceived(callback: (response: StreamResponse<Project>) => void): void;
   
   /**
-   * Enable or disable mock mode
-   * @param enabled - Whether to use mock data
+   * Register callback for stream completion
+   * @param callback Function to call when stream completes
    */
-  setMockMode(enabled: boolean): void;
+  onStreamComplete(callback: () => void): void;
+  
+  /**
+   * Register callback for stream errors
+   * @param callback Function to call when error occurs
+   */
+  onStreamError(callback: (error: string) => void): void;
+  
+  /**
+   * Request backend to start streaming users
+   * @returns Promise that resolves when stream starts
+   */
+  startStreamingUsers(): Promise<void>;
+  
+  /**
+   * Request backend to start streaming projects
+   * @returns Promise that resolves when stream starts
+   */
+  startStreamingProjects(): Promise<void>;
+  
+  /**
+   * Request backend to stop current stream
+   * @returns Promise that resolves when stream stops
+   */
+  stopStreaming(): Promise<void>;
 }
 ```
 
@@ -273,6 +482,49 @@ interface ErrorDisplayProps {
   message: string;
   onRetry?: () => void;
 }
+
+/**
+ * Props for AG-UI streaming list component
+ */
+interface AGStreamingListProps<T> {
+  /** Items currently received from stream */
+  items: T[];
+  
+  /** Whether stream is currently active */
+  isStreaming: boolean;
+  
+  /** Render function for each item */
+  renderItem: (item: T, index: number) => React.ReactNode;
+  
+  /** Optional loading message */
+  loadingMessage?: string;
+  
+  /** Optional completion message */
+  completionMessage?: string;
+  
+  /** Show progress indicator */
+  showProgress?: boolean;
+  
+  /** Total items expected (if known) */
+  totalItems?: number;
+}
+
+/**
+ * Props for streaming progress indicator
+ */
+interface StreamingProgressProps {
+  /** Current count of items received */
+  current: number;
+  
+  /** Total items expected (null if unknown) */
+  total: number | null;
+  
+  /** Whether streaming is active */
+  isActive: boolean;
+  
+  /** Custom message to display */
+  message?: string;
+}
 ```
 
 ### Feature-Specific Component Props
@@ -284,17 +536,21 @@ interface ErrorDisplayProps {
 interface UserCardProps {
   user: User;
   onClick?: (user: User) => void;
+  /** Whether this card is being rendered during streaming */
+  isStreaming?: boolean;
 }
 
 /**
- * Props for UserList component
+ * Props for UserList component (streaming-enabled)
  */
 interface UserListProps {
   users: User[];
-  loading?: boolean;
+  isStreaming?: boolean;
   error?: string | null;
   onUserClick?: (user: User) => void;
   onRefresh?: () => void;
+  /** Show streaming progress */
+  showProgress?: boolean;
 }
 
 /**
@@ -303,10 +559,12 @@ interface UserListProps {
 interface ProjectCardProps {
   project: Project;
   onClick?: (project: Project) => void;
+  /** Whether this card is being rendered during streaming */
+  isStreaming?: boolean;
 }
 
 /**
- * Props for ProjectList component
+ * Props for ProjectList component (streaming-enabled)
  */
 interface ProjectListProps {
   projects: Project[];
@@ -319,33 +577,63 @@ interface ProjectListProps {
 
 ## Hook Return Types
 
-### useGraphAgent Hook
+### useStreamingData Hook
 
 ```typescript
 /**
- * Return type for useGraphAgent hook
+ * Return type for useStreamingData hook (replaces useGraphAgent)
  */
-interface UseGraphAgentResult {
-  /** Current list of users */
+interface UseStreamingDataResult {
+  /** Current list of users received from stream */
   users: User[];
   
-  /** Current list of projects */
+  /** Current list of projects received from stream */
   projects: Project[];
   
-  /** Whether any request is currently loading */
-  loading: boolean;
+  /** Whether stream is currently active */
+  isStreaming: boolean;
   
-  /** Error message from the most recent failed request */
+  /** Error message from the most recent failed stream */
   error: string | null;
   
-  /** Function to fetch all users */
-  fetchUsers: () => Promise<void>;
+  /** Function to start streaming users */
+  streamUsers: () => Promise<void>;
   
-  /** Function to fetch all projects */
-  fetchProjects: () => Promise<void>;
+  /** Function to start streaming projects */
+  streamProjects: () => Promise<void>;
   
-  /** Function to refetch current data */
-  refresh: () => Promise<void>;
+  /** Function to stop current stream */
+  stopStreaming: () => Promise<void>;
+  
+  /** Progress info: current count and total if known */
+  progress: {
+    current: number;
+    total: number | null;
+  };
+}
+```
+
+### useSignalR Hook
+
+```typescript
+/**
+ * Return type for useSignalR hook
+ */
+interface UseSignalRResult {
+  /** Whether SignalR is connected */
+  isConnected: boolean;
+  
+  /** Connection error if any */
+  connectionError: string | null;
+  
+  /** Connect to SignalR hub */
+  connect: () => Promise<void>;
+  
+  /** Disconnect from SignalR hub */
+  disconnect: () => Promise<void>;
+  
+  /** Underlying SignalR service instance */
+  service: ISignalRService | null;
 }
 ```
 

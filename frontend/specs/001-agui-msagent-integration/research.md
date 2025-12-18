@@ -51,59 +51,116 @@ export const AGCard = ({ children, className = '' }: CardProps) => {
 
 ### 2. Microsoft Agent Framework
 
-**Decision**: Implement a simple Agent Pattern based on Microsoft's Semantic Kernel and AutoGen principles
+**Decision**: Implement using Microsoft Semantic Kernel in .NET 8+ as the backend agent framework
 
 **Rationale**:
-- Microsoft Agent Framework isn't a single npm package but rather a pattern/concept
-- Microsoft's Semantic Kernel (C#/.NET) and AutoGen showcase agent patterns
-- For this demo, implement a lightweight TypeScript version following these principles:
-  - Single Responsibility: Agent handles only Graph API interactions
-  - Encapsulation: Hide implementation details from UI
-  - Promise-based: Async/await for all operations
-  - Error handling: Consistent error responses
-  - Mockable: Easy to switch between mock and real data
+- Microsoft Semantic Kernel is the official Microsoft agent framework for .NET
+- Provides built-in support for AI orchestration, plugins, and memory
+- Perfect for demonstrating enterprise-grade agent patterns
+- Well-documented with extensive examples
+- Integrates naturally with Microsoft Graph API
+- Supports streaming responses out of the box
+- Production-ready framework used in real Microsoft products
 
 **Alternatives Considered**:
-1. **LangChain.js** - Full agent framework. PRO: Production-ready, feature-rich. CON: Too complex for a simple demo, overkill
-2. **Direct API calls in components** - No agent pattern. PRO: Simpler to understand. CON: Violates separation of concerns, doesn't demonstrate the agent pattern
-3. **Redux/Zustand with thunks** - State management approach. PRO: Common pattern. CON: Adds complexity, not specifically an "agent" pattern
+1. **TypeScript/JavaScript implementation** - PRO: Single language stack. CON: Doesn't demonstrate real Microsoft Agent Framework, misses .NET ecosystem integration
+2. **LangChain with Python** - PRO: Popular framework. CON: Not Microsoft-specific, different ecosystem
+3. **Custom .NET implementation** - PRO: Full control. CON: Reinventing the wheel, misses educational value of using real framework
 
-**Agent Pattern Design**:
-```typescript
-// frontend/src/agents/GraphAgent.ts
-class GraphAgent {
-  private mockMode: boolean = true;
-
-  async getUsers(): Promise<User[]> {
-    try {
-      // Simulate API delay
-      await this.delay(300);
-      
-      if (this.mockMode) {
-        return MOCK_USERS;
-      }
-      
-      // Future: Real API call
-      // const response = await fetch('https://graph.microsoft.com/v1.0/users');
-      // return response.json();
-    } catch (error) {
-      throw new Error(`Failed to fetch users: ${error.message}`);
+**Agent Implementation Design**:
+```csharp
+// backend/src/GraphAgentDemo/Agents/GraphAgent.cs
+public class GraphAgent : IGraphAgent
+{
+    private readonly IKernel _kernel;
+    private readonly IGraphService _graphService;
+    
+    public GraphAgent(IKernel kernel, IGraphService graphService)
+    {
+        _kernel = kernel;
+        _graphService = graphService;
     }
-  }
+    
+    public async IAsyncEnumerable<User> StreamUsersAsync()
+    {
+        // Extract users from Graph API
+        var users = await _graphService.GetUsersAsync();
+        
+        // Summarize using Semantic Kernel
+        foreach (var user in users)
+        {
+            var summarized = await SummarizeUserAsync(user);
+            yield return summarized;
+            
+            // Add delay for realistic streaming
+            await Task.Delay(100);
+        }
+    }
+    
+    private async Task<User> SummarizeUserAsync(User user)
+    {
+        // Use Semantic Kernel to summarize/enrich user data
+        var prompt = $"Summarize this user profile: {user.DisplayName}, {user.JobTitle}";
+        var result = await _kernel.RunAsync(prompt);
+        
+        user.Summary = result.ToString();
+        return user;
+    }
+}
+```
 
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+**Streaming Implementation**:
+```csharp
+// backend/src/GraphAgentDemo/Hubs/GraphDataHub.cs
+public class GraphDataHub : Hub
+{
+    private readonly IGraphAgent _agent;
+    
+    public async Task StreamUsers()
+    {
+        await foreach (var user in _agent.StreamUsersAsync())
+        {
+            await Clients.Caller.SendAsync("ReceiveUser", user);
+        }
+        
+        await Clients.Caller.SendAsync("StreamComplete");
+    }
+}
+```
+
+**Frontend SignalR Integration**:
+```typescript
+// frontend/src/services/signalrService.ts
+import * as signalR from "@microsoft/signalr";
+
+export class SignalRService {
+  private connection: signalR.HubConnection;
+  
+  async connect(): Promise<void> {
+    this.connection = new signalR.HubConnectionBuilder()
+      .withUrl("http://localhost:5000/graphDataHub")
+      .withAutomaticReconnect()
+      .build();
+    
+    await this.connection.start();
+  }
+  
+  onUserReceived(callback: (user: User) => void): void {
+    this.connection.on("ReceiveUser", callback);
+  }
+  
+  async startStreamingUsers(): Promise<void> {
+    await this.connection.invoke("StreamUsers");
   }
 }
-
-export const graphAgent = new GraphAgent();
 ```
 
 **Agent Framework Principles Applied**:
-- **Autonomy**: Agent independently handles data fetching and error scenarios
-- **Reactivity**: Agent responds to requests and provides consistent responses
-- **Mockability**: Can toggle between mock and real data sources
-- **Observability**: Clear error messages and state communication
+- **Orchestration**: Semantic Kernel manages the workflow
+- **Streaming**: Real-time data delivery via SignalR
+- **Summarization**: Agent enriches/summarizes raw Graph data
+- **Separation**: .NET backend handles agent logic, React frontend handles display
+- **Mockability**: Can toggle between real Graph API and mock data
 
 ### 3. Microsoft Graph API Schema Research
 
@@ -217,44 +274,53 @@ describe('UserList', () => {
 }
 ```
 
-### 5. State Management
+### 5. State Management & Real-time Updates
 
-**Decision**: Use React hooks (useState, useEffect) with custom hooks - no external state library
+**Decision**: Use React hooks (useState, useEffect) with SignalR for real-time streaming updates
 
 **Rationale**:
-- Built-in React hooks are sufficient for this demo's scope
-- Reduces dependencies and learning curve
-- Custom hooks provide reusability without complexity
-- Easy to upgrade to Redux/Zustand later if needed
+- Built-in React hooks are sufficient for local state management
+- SignalR provides real-time bidirectional communication
+- Custom hooks encapsulate streaming logic
+- No additional state management library needed
+- Real-time updates feel more responsive and modern
 
 **Alternatives Considered**:
 1. **Redux Toolkit** - PRO: Industry standard, powerful. CON: Boilerplate, overkill for demo
 2. **Zustand** - PRO: Simple, minimal. CON: Another dependency to learn
-3. **Jotai/Recoil** - PRO: Atomic state. CON: Less common, adds complexity
+3. **Server-Sent Events (SSE)** - PRO: Simpler than SignalR. CON: One-way only, less flexible
 
-**Custom Hook Pattern**:
+**Custom Hook Pattern for Streaming**:
 ```typescript
-// frontend/src/hooks/useGraphAgent.ts
-export function useGraphAgent() {
+// frontend/src/hooks/useStreamingData.ts
+export function useStreamingData() {
   const [users, setUsers] = useState<User[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const signalRService = useSignalR();
 
-  const fetchUsers = async () => {
-    setLoading(true);
+  const streamUsers = async () => {
+    setIsStreaming(true);
     setError(null);
+    setUsers([]); // Clear existing
+    
+    signalRService.onUserReceived((user: User) => {
+      setUsers(prev => [...prev, user]); // Add user as it streams
+    });
+    
+    signalRService.onStreamComplete(() => {
+      setIsStreaming(false);
+    });
+    
     try {
-      const data = await graphAgent.getUsers();
-      setUsers(data);
+      await signalRService.startStreamingUsers();
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
+      setIsStreaming(false);
     }
   };
 
-  return { users, projects, loading, error, fetchUsers, fetchProjects };
+  return { users, isStreaming, error, streamUsers };
 }
 ```
 
@@ -307,13 +373,21 @@ export function useGraphAgent() {
 
 ## Technology Stack Summary
 
-**Core Technologies** (already in project):
+**Backend Technologies**:
+- .NET 8 SDK
+- Microsoft.SemanticKernel (Agent Framework)
+- Microsoft.Graph (Graph API SDK)
+- Microsoft.AspNetCore.SignalR (Real-time streaming)
+- xUnit (Testing framework)
+
+**Frontend Technologies** (already in project):
 - React 19.2.0
 - TypeScript 5.9.3
 - Vite 7.2.4
 - Node.js 18+
 
-**To Be Added**:
+**Frontend To Be Added**:
+- @microsoft/signalr: ^8.0.0 (SignalR client)
 - react-router-dom: ^6.20.0 (routing)
 - vitest: ^1.0.0 (testing framework)
 - @testing-library/react: ^14.0.0 (component testing)
@@ -328,17 +402,24 @@ export function useGraphAgent() {
 ## Implementation Guidelines
 
 ### Code Organization Principles
-1. **Separation of Concerns**: Agents, components, hooks, and types in separate directories
-2. **Single Responsibility**: Each file has one clear purpose
-3. **DRY (Don't Repeat Yourself)**: Shared logic in custom hooks
+1. **Separation of Concerns**: Backend (.NET agent), frontend (React UI), clear boundaries
+2. **Single Responsibility**: Each file/class has one clear purpose
+3. **DRY (Don't Repeat Yourself)**: Shared logic in services/hooks
 4. **Explicit Over Implicit**: Clear naming, no magic strings
-5. **Type Safety**: Use TypeScript for all data structures
+5. **Type Safety**: Use TypeScript and C# for all data structures
 
 ### Naming Conventions
-- Components: PascalCase (UserCard.tsx)
-- Hooks: camelCase with "use" prefix (useGraphAgent.ts)
-- Types/Interfaces: PascalCase (User, Project, ApiResponse)
-- Files: Match their default export
+**Backend (C#)**:
+- Classes: PascalCase (GraphAgent, GraphDataHub)
+- Interfaces: IPascalCase (IGraphAgent, IGraphService)
+- Methods: PascalCase (StreamUsersAsync, GetProjectsAsync)
+- Files: Match class name (GraphAgent.cs)
+
+**Frontend (TypeScript)**:
+- Components: PascalCase (UserCard.tsx, AGStreamingList.tsx)
+- Hooks: camelCase with "use" prefix (useStreamingData.ts, useSignalR.ts)
+- Services: camelCase (signalrService.ts, streamingClient.ts)
+- Types/Interfaces: PascalCase (User, Project, StreamResponse)
 - CSS Modules: component-name.module.css
 
 ### Documentation Requirements
