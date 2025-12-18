@@ -1,0 +1,81 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusActive {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.statusCompleted {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.statusOnHold {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.description {
+  margin: 0 0 1rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detailRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 500;
+  color: #666;
+  min-width: 80px;
+}
+
+.value {
+  color: #333;
+}
+
+.streaming {
+  animation: highlightNew 0.5s ease-out;
+}
+
+@keyframes highlightNew {
+  0% {
+    background-color: #e3f2fd;
+  }
+  100% {
+    background-color: white;
+  }
+}
